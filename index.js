@@ -9,7 +9,8 @@ const BEAR_DB = untildify(
 const [ ,, outputDirectory ] = process.argv
 
 if (!outputDirectory) {
-	throw new Error(`You must provide an output directory`)
+	process.stderr.write(`You must provide an output directory\n`)
+	process.exit(1)
 }
 
 main(
