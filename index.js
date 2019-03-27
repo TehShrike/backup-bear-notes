@@ -38,7 +38,7 @@ async function main(outputDirectory) {
 
 	return Promise.all(
 		rows.map(({ title, text }) => {
-			const filename = `${ title }.md`.replace("/", "-")
+			const filename = `${ title.replace("/", "-") }.md`
 
 			return fs.writeFile(path.join(outputDirectory, filename), text, { encoding: `utf8` })
 		})
