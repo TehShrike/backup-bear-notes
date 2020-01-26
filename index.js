@@ -42,13 +42,12 @@ async function main(outputDirectory) {
 		SELECT
 			ZSFNOTE.ZTITLE AS title,
 			ZSFNOTE.ZTEXT AS text,
-			ZSFNOTETAG.ZTITLE AS tag
+			ZSFNOTETAG.ZTITLE AS tag,
+			ZSFNOTE.ZTRASHED AS trashed
 		FROM
 			ZSFNOTE
 		LEFT JOIN Z_7TAGS ON ZSFNOTE.Z_PK = Z_7TAGS.Z_7NOTES
 		LEFT JOIN ZSFNOTETAG ON Z_7TAGS.Z_14TAGS = ZSFNOTETAG.Z_PK
-		WHERE
-			ZTRASHED = 0
 		ORDER BY LENGTH(tag)`)
 
 	if (useTagsAsDirectories) {
@@ -62,10 +61,14 @@ async function main(outputDirectory) {
 	}
 
 	return Promise.all(
-		rows.map(({ title, text, tag }) => {
+		rows.map(({ title, text, tag, trashed }) => {
 			const filename = buildFilename(title)
 			const destinationDirectory = !useTagsAsDirectories ?
 				outputDirectory : path.join(outputDirectory, tag || `untagged`)
+
+			if (trashed) {
+				return fs.unlink(path.join(destinationDirectory, filename))
+			}
 
 			return fs.writeFile(path.join(destinationDirectory, filename), text, { encoding: `utf8` })
 		})
