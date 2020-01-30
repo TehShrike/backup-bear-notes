@@ -1,6 +1,6 @@
 {
   "name": "backup-bear-notes",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Back up your Bear Notes content to a folder",
   "bin": "index.js",
   "scripts": {
