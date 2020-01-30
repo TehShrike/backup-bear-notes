@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const untildify = require(`untildify`)
+const buildFilename = require(`./build-filename`)
 
 const BEAR_DB = untildify(
 	`~/Library/Group Containers/9K33E3U3T4.net.shinyfrog.bear/Application Data/database.sqlite`
@@ -38,7 +39,7 @@ async function main(outputDirectory) {
 
 	return Promise.all(
 		rows.map(({ title, text }) => {
-			const filename = `${ title.replace("/", "-") }.md`
+			const filename = buildFilename(title)
 
 			return fs.writeFile(path.join(outputDirectory, filename), text, { encoding: `utf8` })
 		})
