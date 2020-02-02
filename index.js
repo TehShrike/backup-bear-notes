@@ -2,6 +2,9 @@
 
 const untildify = require(`untildify`)
 const buildFilename = require(`./build-filename`)
+const mri = require('mri')
+
+const { 'use-tags-as-directories': useTagsAsDirectories } = mri(process.argv.slice(2))
 
 const BEAR_DB = untildify(
 	`~/Library/Group Containers/9K33E3U3T4.net.shinyfrog.bear/Application Data/database.sqlite`
@@ -35,13 +38,39 @@ async function main(outputDirectory) {
 
 	const db = await sqlite.open(BEAR_DB)
 
-	const rows = await db.all(`SELECT ZTITLE AS title, ZTEXT AS text FROM ZSFNOTE WHERE ZTRASHED = 0`)
+	const rows = await db.all(`
+		SELECT
+			ZSFNOTE.ZTITLE AS title,
+			ZSFNOTE.ZTEXT AS text,
+			ZSFNOTETAG.ZTITLE AS tag,
+			ZSFNOTE.ZTRASHED AS trashed
+		FROM
+			ZSFNOTE
+		LEFT JOIN Z_7TAGS ON ZSFNOTE.Z_PK = Z_7TAGS.Z_7NOTES
+		LEFT JOIN ZSFNOTETAG ON Z_7TAGS.Z_14TAGS = ZSFNOTETAG.Z_PK
+		ORDER BY LENGTH(tag)`)
+
+	if (useTagsAsDirectories) {
+		const tags = Array.from(new Set(rows.map(row => row.tag)))
+
+		await Promise.all(tags.map(tag => {
+			const tagDirectory = tag ? tag : 'untagged'
+
+			return makeDir(path.join(outputDirectory, tagDirectory))
+		}))
+	}
 
 	return Promise.all(
-		rows.map(({ title, text }) => {
+		rows.map(({ title, text, tag, trashed }) => {
 			const filename = buildFilename(title)
+			const destinationDirectory = !useTagsAsDirectories ?
+				outputDirectory : path.join(outputDirectory, tag || `untagged`)
 
-			return fs.writeFile(path.join(outputDirectory, filename), text, { encoding: `utf8` })
+			if (trashed) {
+				return fs.unlink(path.join(destinationDirectory, filename))
+			}
+
+			return fs.writeFile(path.join(destinationDirectory, filename), text, { encoding: `utf8` })
 		})
 	)
 }
